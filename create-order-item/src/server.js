@@ -48,13 +48,15 @@ const CREATE_USER_ORDER = `mutation createUserOrder($city: String!, $country: St
   }
 }`;
 
-// execute the parent operation in Hasura
 const execute = async (variables, operation, reqHeaders) => {
   const fetchResponse = await fetch(
     "https://maximum-quail-14.hasura.app/v1/graphql",
     {
       method: 'POST',
-      headers: reqHeaders || {},
+      headers: {
+        ...reqHeaders,
+        'x-hasura-access-key': process.env.HASURA_GRAPHQL_ADMIN_SECRET
+      } || {},
       body: JSON.stringify({
         query: operation,
         variables
@@ -62,7 +64,6 @@ const execute = async (variables, operation, reqHeaders) => {
     }
   );
   const data = await fetchResponse.json();
-  console.log('DEBUG: ', data);
   return data;
 };
   
@@ -73,7 +74,7 @@ app.post('/createOrderItem', async (req, res) => {
   let latest_order = '';
 
   // check if the user has any orders
-  const { data: orderExists, errors: orderExistsErr } = await execute({ user_id }, USER_ORDER_EXISTS, req.headers);
+  const { data: orderExists, errors: orderExistsErr } = await execute({ user_id }, USER_ORDER_EXISTS, req.body.session_variables);
 
   if (orderExistsErr) {
     return res.status(400).json({ error: orderExistsErr[0].message });
@@ -83,7 +84,7 @@ app.post('/createOrderItem', async (req, res) => {
   //   create a new order and store its ID in "latest_order"
   // otherwise, store the ID of the latest order in "latest_order"
   if (orderExists.users[0].orders.length === 0 || orderExists.users[0].orders[0].ordered === true) {
-    const { data: createOrder, errors: createOrderErr } = await execute({ city: '', country: '', house_number: 0, street_name: '', user_id, zip_code: '', total: 0}, CREATE_USER_ORDER, req.headers);
+    const { data: createOrder, errors: createOrderErr } = await execute({ city: '', country: '', house_number: 0, street_name: '', user_id, zip_code: '', total: 0}, CREATE_USER_ORDER, req.body.session_variables);
     
     if (createOrderErr) {
       return res.status(400).json({ error: createOrderErr[0].message });
@@ -95,7 +96,7 @@ app.post('/createOrderItem', async (req, res) => {
   }
 
   // create the order item and add it to the order
-  const { data: createOrder, errors: createOrderErr } = await execute({ product_id, quantity, order_id: latest_order }, CREATE_ORDER_ITEM, req.headers);
+  const { data: createOrder, errors: createOrderErr } = await execute({ product_id, quantity, order_id: latest_order }, CREATE_ORDER_ITEM, req.body.session_variables);
 
   if (createOrderErr) {
     return res.status(400).json({ error: createOrderErr[0].message});

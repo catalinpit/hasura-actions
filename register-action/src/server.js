@@ -27,7 +27,10 @@ const execute = async (variables, reqHeaders) => {
     "https://maximum-quail-14.hasura.app/v1/graphql",
     {
       method: 'POST',
-      headers: reqHeaders || {},
+      headers: {
+        ...reqHeaders,
+        'x-hasura-access-key': process.env.HASURA_GRAPHQL_ADMIN_SECRET
+      } || {},
       body: JSON.stringify({
         query: REGISTRATION,
         variables
@@ -48,7 +51,7 @@ app.post('/register', async (req, res) => {
   // encrypt the password
   const hashedPassword = bcrypt.hashSync(password, 10);
 
-  const { data, errors } = await execute({ name, username, email, password: hashedPassword }, req.headers);
+  const { data, errors } = await execute({ name, username, email, password: hashedPassword });
 
   if (errors) {
     return res.status(400).json(errors[0])

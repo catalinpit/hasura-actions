@@ -38,13 +38,32 @@ const LATEST_USER_ORDER = `query getUserOrder($user_id: uuid) {
 }
 `;
 
+const execute = async (variables, operation, reqHeaders) => {
+  const fetchResponse = await fetch(
+    "https://maximum-quail-14.hasura.app/v1/graphql",
+    {
+      method: 'POST',
+      headers: {
+        ...reqHeaders,
+        'x-hasura-access-key': process.env.HASURA_GRAPHQL_ADMIN_SECRET
+      } || {},
+      body: JSON.stringify({
+        query: operation,
+        variables
+      })
+    }
+  );
+  const data = await fetchResponse.json();
+  return data;
+};
+
 app.post('/placeOrder', async (req, res) => {
   // get request input
   const { city, country, house_number, street_name, zip_code, ordered } = req.body.input;
   const user_id = req.body.session_variables['x-hasura-user-id'];
 
   // check if the user has any orders
-  const { data: orderExists, errors: orderExistsErr } = await execute({ user_id }, LATEST_USER_ORDER, req.headers);
+  const { data: orderExists, errors: orderExistsErr } = await execute({ user_id }, LATEST_USER_ORDER, req.body.session_variables);
 
   if (orderExistsErr) {
     return res.status(400).json({ error: orderExistsErr[0].message });
@@ -63,7 +82,7 @@ app.post('/placeOrder', async (req, res) => {
 
   const amountToPay = orderItemsTotal.reduce((acc, curr) => acc + curr, 0);
 
-  const { data: placeOrder, errors: placeOrderErr } = await execute({ order_id, city, country, house_number, street_name, zip_code, ordered, total: amountToPay }, PLACE_ORDER, req.headers);
+  const { data: placeOrder, errors: placeOrderErr } = await execute({ order_id, city, country, house_number, street_name, zip_code, ordered, total: amountToPay }, PLACE_ORDER, req.body.session_variables);
 
   if (placeOrderErr) {
     return res.status(400).json({ error: placeOrderErr[0].message });
