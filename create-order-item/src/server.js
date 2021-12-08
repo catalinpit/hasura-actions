@@ -50,7 +50,7 @@ const CREATE_USER_ORDER = `mutation createUserOrder($city: String!, $country: St
 
 const execute = async (variables, operation, reqHeaders) => {
   const fetchResponse = await fetch(
-    "https://maximum-quail-14.hasura.app/v1/graphql",
+    "<your_GraphQL_endpoint",
     {
       method: 'POST',
       headers: {
@@ -63,10 +63,10 @@ const execute = async (variables, operation, reqHeaders) => {
       })
     }
   );
+
   const data = await fetchResponse.json();
   return data;
 };
-  
 
 app.post('/createOrderItem', async (req, res) => {
   const { product_id, quantity } = req.body.input;

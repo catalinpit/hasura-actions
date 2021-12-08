@@ -24,7 +24,7 @@ mutation ($name: String!, $username: String!, $email: String!, $password: String
 
 const execute = async (variables, reqHeaders) => {
   const fetchResponse = await fetch(
-    "https://maximum-quail-14.hasura.app/v1/graphql",
+    "<your_GraphQL_endpoint",
     {
       method: 'POST',
       headers: {
